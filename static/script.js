@@ -6,66 +6,71 @@ const statusText = document.getElementById('status-text');
 const neustartButton = document.getElementById('neustart-button');
 
 /**
- * Zeichnet das gesamte Spielbrett basierend auf den Daten vom Server.
+ * Zeichnet das gesamte Spielbrett und fügt Klick-Events hinzu.
  * @param {object} spielDaten - Das vom Server gesendete JSON-Objekt.
  */
 function zeichneSpielbrett(spielDaten) {
-    // 1. Altes Brett leeren, bevor wir neu zeichnen
-    spielbrettContainer.innerHTML = '';
+    const gridContainer = document.getElementById('spielbrett-grid');
+    gridContainer.innerHTML = ''; // Altes Brett leeren
 
-    // Wir erstellen einen Container für die Mulden von Spieler 2 (oben)
-    const spieler2Reihe = document.createElement('div');
-    spieler2Reihe.classList.add('mulden-reihe');
+    // 1. Kalaha von Spieler 2 (links) erstellen
+    const kalaha2 = document.createElement('div');
+    kalaha2.id = 'kalaha-spieler2';
+    kalaha2.className = 'kalaha';
+    kalaha2.innerText = spielDaten.mulden[13];
+    gridContainer.appendChild(kalaha2);
 
-    // Wir erstellen einen Container für die Mulden von Spieler 1 (unten)
-    const spieler1Reihe = document.createElement('div');
-    spieler1Reihe.classList.add('mulden-reihe');
+    // 2. Kalaha von Spieler 1 (rechts) erstellen
+    const kalaha1 = document.createElement('div');
+    kalaha1.id = 'kalaha-spieler1';
+    kalaha1.className = 'kalaha';
+    kalaha1.innerText = spielDaten.mulden[6];
+    gridContainer.appendChild(kalaha1);
 
-    // 2. Durch die Mulden-Liste iterieren und für jede Mulde ein Element erstellen
-    spielDaten.mulden.forEach((anzahlSteine, index) => {
+    // 3. Spielmulden erstellen
+    // Mulden für Spieler 1 (unten, Index 0-5)
+    for (let i = 0; i <= 5; i++) {
         const mulde = document.createElement('div');
-        mulde.innerText = anzahlSteine; // Die Anzahl der Steine anzeigen
-        mulde.dataset.index = index;    // Den Index als data-Attribut speichern
+        mulde.className = 'mulde';
+        mulde.dataset.index = i;
+        mulde.dataset.spieler = '1';
+        mulde.innerText = spielDaten.mulden[i];
 
-        if (index === 6 || index === 13) {
-            // Das sind die Kalahas (Gewinnmulden)
-            mulde.classList.add('kalaha');
-            if (index === 6) {
-                mulde.id = 'kalaha-spieler1';
-            } else {
-                mulde.id = 'kalaha-spieler2';
-            }
-        } else {
-            // Das sind die normalen Spielmulden
-            mulde.classList.add('mulde');
-            // Hier könnten wir später Klick-Events hinzufügen
+        if (spielDaten.aktueller_spieler === 1 && spielDaten.mulden[i] > 0 && !spielDaten.spiel_beendet) {
+            mulde.classList.add('clickable');
+            mulde.addEventListener('click', async () => {
+                if (document.body.classList.contains('warten')) return;
+                document.body.classList.add('warten');
+                statusText.innerText = 'KI überlegt...';
+                await fetch('/api/mache_zug/' + i);
+                await updateSpiel();
+                document.body.classList.remove('warten');
+            });
         }
-        
-        // Die Mulden den richtigen Reihen zuordnen
-        if (index >= 0 && index <= 5) {
-            spieler1Reihe.appendChild(mulde);
-        } else if (index >= 7 && index <= 12) {
-            // Wir fügen die oberen Mulden in umgekehrter Reihenfolge ein,
-            // damit sie von rechts nach links angezeigt werden.
-            spieler2Reihe.prepend(mulde);
-        }
-    });
+        gridContainer.appendChild(mulde);
+    }
 
-    // Die fertigen Reihen und die Kalahas in der richtigen Reihenfolge ins Haupt-div einfügen
-    spielbrettContainer.appendChild(document.getElementById('kalaha-spieler2'));
-    spielbrettContainer.appendChild(spieler2Reihe);
-    spielbrettContainer.appendChild(document.getElementById('kalaha-spieler1'));
-    spielbrettContainer.appendChild(spieler1Reihe);
-
-
-    // 3. Spiel-Status aktualisieren
+    // Mulden für Spieler 2 (oben, Index 7-12)
+    // Wir iterieren RÜCKWÄRTS von 12 nach 7, um die visuelle Reihenfolge korrekt zu halten!
+    for (let i = 12; i >= 7; i--) {
+        const mulde = document.createElement('div');
+        mulde.className = 'mulde';
+        mulde.dataset.index = i;
+        mulde.dataset.spieler = '2';
+        mulde.innerText = spielDaten.mulden[i];
+        gridContainer.appendChild(mulde);
+    }
+    
+    // 4. Spiel-Status aktualisieren
+    const statusText = document.getElementById('status-text');
     if (spielDaten.spiel_beendet) {
-        statusText.innerText = `Spiel beendet! Gewinner: Spieler ${spielDaten.gewinner}`;
+        if(spielDaten.gewinner === 1) statusText.innerText = 'Glückwunsch, Sie haben gewonnen!';
+        else if(spielDaten.gewinner === 2) statusText.innerText = 'Die KI hat gewonnen.';
+        else statusText.innerText = 'Unentschieden!';
     } else {
         statusText.innerText = `Spieler ${spielDaten.aktueller_spieler} ist am Zug.`;
     }
 }
-
 
 /**
  * Die Hauptfunktion, die den Spielzustand vom Server holt und die Seite aktualisiert.

@@ -1,4 +1,4 @@
-/* style.css */
+/* static/style.css */
 body {
     font-family: sans-serif;
     display: flex;
@@ -6,27 +6,33 @@ body {
     align-items: center;
 }
 
-#spielbrett-container {
-    display: flex;
-    align-items: center;
+#spiel-info {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* --- DAS NEUE GRID-LAYOUT --- */
+#spielbrett-grid {
+    display: grid;
+    /* Wir definieren 8 Spalten: Kalaha, 6x Mulde, Kalaha */
+    grid-template-columns: 100px repeat(6, 80px) 100px;
+    grid-template-rows: 80px 80px; /* Zwei Reihen für die Mulden */
+    gap: 15px; /* Abstand zwischen den Mulden */
     background-color: #c39c63;
     border: 5px solid #8b6c42;
-    padding: 10px;
+    padding: 20px;
     border-radius: 10px;
+    /* Wir nutzen grid-template-areas für eine "visuelle" Zuordnung */
+    grid-template-areas: 
+        "kalaha2 mulde2 mulde2 mulde2 mulde2 mulde2 mulde2 kalaha1"
+        "kalaha2 mulde1 mulde1 mulde1 mulde1 mulde1 mulde1 kalaha1";
 }
 
-.mulden-reihe {
-    display: flex;
-    flex-direction: column;
-    margin: 0 20px;
-}
-
-.mulde, .kalaha {
+.mulde {
     width: 80px;
     height: 80px;
     border: 3px solid #8b6c42;
     border-radius: 50%;
-    margin: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,7 +41,35 @@ body {
 }
 
 .kalaha {
-    width: 100px;
-    height: 240px;
+    border: 3px solid #8b6c42;
     border-radius: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5em;
+    background-color: #a98851;
+}
+
+/* --- Zuordnung der Elemente zu den Grid-Areas --- */
+#kalaha-spieler2 {
+    grid-area: kalaha2;
+}
+#kalaha-spieler1 {
+    grid-area: kalaha1;
+}
+.mulde[data-spieler="1"] {
+    grid-row: 2; /* Mulden von Spieler 1 sind in der zweiten Reihe */
+}
+.mulde[data-spieler="2"] {
+    grid-row: 1; /* Mulden von Spieler 2 sind in der ersten Reihe */
+}
+
+.mulde.clickable {
+    cursor: pointer;
+    background-color: #bfa06d;
+}
+
+.mulde.clickable:hover {
+    background-color: #d1b582;
+    border-color: #a58352;
 }

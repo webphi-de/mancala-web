@@ -7,20 +7,19 @@
     <!-- Verknüpfung zu unserer zukünftigen CSS-Datei -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+<!-- templates/index.html -->
 <body>
-    <h1>Mancala - Das Spiel</h1>
-    
+    <h1>Mancala</h1>
+
     <div id="spiel-info">
         <p>Status: <span id="status-text">Lade Spiel...</span></p>
         <button id="neustart-button">Neues Spiel</button>
     </div>
 
-    <div id="spielbrett-container">
-        <!-- Das Spielbrett wird hier von JavaScript dynamisch erzeugt -->
+    <!-- Neuer Haupt-Container für das Grid-Layout -->
+    <div id="spielbrett-grid">
+        <!-- Das JavaScript wird die Elemente hier einfügen -->
     </div>
 
-    <!-- Verknüpfung zu unserer zukünftigen JavaScript-Datei -->
-    <!-- Wichtig: Am Ende des Body-Tags, damit das HTML erst geladen wird -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-</html>
