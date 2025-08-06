@@ -1,6 +1,7 @@
 # app.py
 
-from flask import Flask, jsonify
+# render_template wurde hinzugefügt
+from flask import Flask, jsonify, render_template
 from spielbrett import Spielbrett
 from ki_gegner import KiGegner
 
@@ -8,7 +9,7 @@ from ki_gegner import KiGegner
 app = Flask(__name__)
 brett = Spielbrett()
 ki = KiGegner(spieler_nummer=2, max_tiefe=5)
-aktueller_spieler = 1  # Spieler 1 (Mensch) beginnt
+aktueller_spieler = 1
 
 def spiel_zuruecksetzen():
     """Hilfsfunktion, um das Spiel auf den Anfangszustand zu setzen."""
@@ -16,21 +17,20 @@ def spiel_zuruecksetzen():
     brett = Spielbrett()
     aktueller_spieler = 1
 
-# --- API-Routen ---
+# --- API-Routen und die neue HTML-Route ---
 
 @app.route('/')
 def home():
-    return "Server läuft. Endpunkte: /api/spielstand, /api/neues_spiel, /api/mache_zug/<index>"
+    """Liefert jetzt unsere Haupt-HTML-Seite aus."""
+    return render_template('index.html')
 
 @app.route('/api/neues_spiel')
 def neues_spiel():
-    """Setzt das Spiel zurück und gibt den neuen Spielstand zurück."""
     spiel_zuruecksetzen()
     return get_spielstand()
 
 @app.route('/api/spielstand')
 def get_spielstand():
-    """Gibt den aktuellen Spielzustand als JSON zurück."""
     spiel_beendet = brett.pruefe_spielende()
     gewinner = None
     if spiel_beendet:
@@ -38,7 +38,7 @@ def get_spielstand():
         kalaha2 = brett.mulden[13]
         if kalaha1 > kalaha2: gewinner = 1
         elif kalaha2 > kalaha1: gewinner = 2
-        else: gewinner = 0 # Unentschieden
+        else: gewinner = 0
 
     response_data = {
         'mulden': brett.mulden,
@@ -50,10 +50,8 @@ def get_spielstand():
 
 @app.route('/api/mache_zug/<int:mulden_index>')
 def mache_zug_api(mulden_index):
-    """Nimmt den Zug des Menschen entgegen und lässt die KI antworten."""
     global aktueller_spieler
 
-    # --- Validierung des menschlichen Zuges ---
     if brett.pruefe_spielende():
         return jsonify({'error': 'Das Spiel ist bereits beendet.'}), 400
     if aktueller_spieler != 1:
@@ -63,22 +61,19 @@ def mache_zug_api(mulden_index):
     if brett.mulden[mulden_index] == 0:
         return jsonify({'error': 'Ungültiger Zug, die Mulde ist leer.'}), 400
 
-    # --- Menschlichen Zug ausführen ---
     hat_extrazug_mensch = brett.mache_zug(mulden_index)
     if brett.pruefe_spielende():
         return get_spielstand()
     if hat_extrazug_mensch:
-        return get_spielstand() # Mensch hat Extrazug, KI ist nicht dran
+        return get_spielstand()
 
-    # --- KI-Zug ausführen (wenn sie dran ist) ---
     aktueller_spieler = 2
     while aktueller_spieler == ki.spieler_nummer and not brett.pruefe_spielende():
         ki_zug_index = ki.finde_besten_zug(brett)
         if ki_zug_index == -1: break
-
         hat_extrazug_ki = brett.mache_zug(ki_zug_index)
         if not hat_extrazug_ki:
-            aktueller_spieler = 1 # Spielerwechsel zurück zum Menschen
+            aktueller_spieler = 1
 
     return get_spielstand()
 

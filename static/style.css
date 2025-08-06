@@ -1,0 +1,41 @@
+/* style.css */
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#spielbrett-container {
+    display: flex;
+    align-items: center;
+    background-color: #c39c63;
+    border: 5px solid #8b6c42;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.mulden-reihe {
+    display: flex;
+    flex-direction: column;
+    margin: 0 20px;
+}
+
+.mulde, .kalaha {
+    width: 80px;
+    height: 80px;
+    border: 3px solid #8b6c42;
+    border-radius: 50%;
+    margin: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    background-color: #a98851;
+}
+
+.kalaha {
+    width: 100px;
+    height: 240px;
+    border-radius: 50px;
+}

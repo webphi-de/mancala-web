@@ -70,7 +70,7 @@ class Spielbrett:
                 
                 # Prüfen, ob in der gegenüberliegenden Mulde Steine liegen
                 if self.mulden[gegenueber_index] > 0:
-                    print(f"Geklaut! Steine aus Mulde {gegenueber_index} werden erobert.")
+                   # print(f"Geklaut! Steine aus Mulde {gegenueber_index} werden erobert.")
                     # Eigene Steine und die des Gegners in die Kalaha legen
                     geklaute_steine = self.mulden[gegenueber_index] + self.mulden[letzter_index]
                     self.mulden[spieler_kalaha] += geklaute_steine
@@ -110,61 +110,57 @@ class Spielbrett:
     
 
 # --- Komplette Spiel-Schleife zum Testen ---
+# --- Komplette, korrigierte Spiel-Schleife ---
+
 if __name__ == '__main__':
     brett = Spielbrett()
-
-    # KI als Spieler 2 initialisieren (Tiefe 5 ist ein guter Startwert)
-    # Sie können Spieler 1 oder 2 sein lassen, je nachdem, wer die KI ist
     from ki_gegner import KiGegner
-    ki = KiGegner(spieler_nummer=2, max_tiefe=5) 
-    
-    aktueller_spieler = 1 # Spieler 1 (Mensch) beginnt
+    ki = KiGegner(spieler_nummer=2, max_tiefe=5)
+    aktueller_spieler = 1
 
-    while True: # Die Schleife läuft, bis das Spiel endet
+    while True:
         print("\n" + "="*30)
         print(brett)
         print(f"\nSpieler {aktueller_spieler} ist am Zug.")
 
-        mulden_index = -1
         hat_extrazug = False
 
         if aktueller_spieler == ki.spieler_nummer:
             # KI ist am Zug
             print("KI überlegt...")
             mulden_index = ki.finde_besten_zug(brett)
-            if mulden_index != -1: # Sicherstellen, dass ein Zug gefunden wurde
-                print(f"KI wählt Mulde {mulden_index + 1} (interner Index {mulden_index})")
+            if mulden_index != -1:
+                print(f"KI wählt Mulde {mulden_index - 6 if aktueller_spieler == 2 else mulden_index + 1} (intern: {mulden_index+1})")
                 hat_extrazug = brett.mache_zug(mulden_index)
             else:
-                print("KI konnte keinen gültigen Zug finden. (Sollte nicht passieren, wenn noch Mulden voll sind)")
-                # Eventuell hier eine Notfall-Logik oder Spielende auslösen
-                break # Vorübergehender Abbruch bei unerwartetem Zustand
+                print("KI findet keinen Zug mehr.")
         else:
             # Mensch ist am Zug
             try:
-                # Wir fragen nach einer Zahl von 1-6 und rechnen sie in den Index um
+                wahl = int(input("Wähle deine Mulde (1-6): "))
                 if aktueller_spieler == 1:
-                    wahl = int(input("Wähle deine Mulde (1-6): "))
                     mulden_index = wahl - 1
-                else: # Spieler 2 (wäre, wenn KI Spieler 1 wäre)
-                    wahl = int(input("Wähle deine Mulde (1-6 auf deiner Seite): "))
-                    mulden_index = wahl + 6 # Umrechnung auf Indizes 7-12
+                else: # Falls der Mensch Spieler 2 wäre
+                    mulden_index = wahl + 6
                 
-                # Zug ausführen und prüfen, ob Extrazug
+                # --- KORREKTUR HIER ---
+                # Prüfen, ob der Zug gültig ist, BEVOR er ausgeführt wird.
+                if not (0 <= mulden_index <= 12): # Überprüft, ob die Zahl im gültigen Bereich ist
+                     print("Ungültige Eingabe. Bitte eine Zahl von 1-6 wählen.")
+                     continue
+                
+                if brett.mulden[mulden_index] == 0:
+                    print("Dieser Zug ist nicht erlaubt, die Mulde ist leer. Bitte erneut wählen.")
+                    continue
+                
+                # Jetzt den Zug ausführen
                 hat_extrazug = brett.mache_zug(mulden_index)
 
-            except (ValueError, IndexError):
-                print("Ungültige Eingabe. Bitte eine passende Zahl eingeben.")
-                continue # Nächster Versuch in der Schleife
-            
-            # Wenn mache_zug False zurückgibt, war der Zug ungültig (z.B. Mulde leer)
-            # Hier müssen wir den Spieler erneut fragen.
-            if not hat_extrazug and brett.mulden[mulden_index] == 0: # Überprüfen, ob Mulde leer war
-                print("Dieser Zug ist nicht erlaubt (Mulde ist leer oder ungültig). Bitte erneut wählen.")
+            except ValueError:
+                print("Ungültige Eingabe. Bitte eine Zahl eingeben.")
                 continue
 
-
-        # Nach jedem Zug prüfen, ob das Spiel vorbei ist
+        # Spielende prüfen
         if brett.pruefe_spielende():
             print("\n" + "="*30)
             print("Das Spiel ist beendet!")
@@ -178,9 +174,9 @@ if __name__ == '__main__':
                 print("Spieler 2 gewinnt!")
             else:
                 print("Unentschieden!")
-            break # Die while-Schleife beenden
+            break
 
-        # Den Spieler nur wechseln, WENN es KEINEN Extrazug gab.
+        # Spieler nur wechseln, wenn es KEINEN Extrazug gab.
         if not hat_extrazug:
             aktueller_spieler = 2 if aktueller_spieler == 1 else 1
 
