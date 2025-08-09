@@ -73,3 +73,28 @@ body {
     background-color: #d1b582;
     border-color: #a58352;
 }
+
+#verlauf-container {
+    margin-top: 30px;
+    width: 80%;
+    max-width: 500px;
+    text-align: center;
+}
+
+#verlauf-liste {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    height: 150px;
+    overflow-y: auto; /* Fügt eine Scrollbar hinzu, wenn der Inhalt zu hoch wird */
+    display: flex;
+    flex-direction: column-reverse; /* Hält die Scrollbar unten (neueste Einträge) */
+}
+
+#verlauf-liste p {
+    margin: 4px 0;
+    font-size: 0.9em;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+}

@@ -56,7 +56,8 @@ class Spielbrett:
         # Regel A: Letzter Stein landet in der eigenen Kalaha -> Extrazug
         if letzter_index == spieler_kalaha:
             # print("Letzter Stein in eigener Kalaha. Extrazug!")
-            return True # Extrazug
+            # return True # Extrazug
+            return {'hat_extrazug': True, 'letzter_index': letzter_index}
         
         # Regel B: Letzter Stein landet in einer leeren Mulde auf der eigenen Seite -> Steine klauen
         # Wir prüfen, ob die Mulde vorher leer war (jetzt ist 1 Stein drin) und ob sie auf der Spielerseite liegt.
@@ -81,7 +82,8 @@ class Spielbrett:
             
             # Ansonsten ist der Zug einfach normal zu Ende.
             # print("Zug beendet. Nächster Spieler ist an der Reihe.")
-            return False # Spielerwechsel
+            # return False # Spielerwechsel
+            return {'hat_extrazug': False, 'letzter_index': letzter_index}
 
     def pruefe_spielende(self):
         # Summe der Steine auf den Seiten beider Spieler berechnen.

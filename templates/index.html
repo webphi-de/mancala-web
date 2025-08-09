@@ -21,5 +21,12 @@
         <!-- Das JavaScript wird die Elemente hier einfügen -->
     </div>
 
+    <!-- NEU: Container für den Spielverlauf -->
+ <div id="verlauf-container">
+    <h2>Spielverlauf</h2>
+    <!-- Die ID hier muss exakt "verlauf-liste" lauten -->
+    <div id="verlauf-liste"></div>
+</div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

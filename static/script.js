@@ -72,19 +72,52 @@ function zeichneSpielbrett(spielDaten) {
     }
 }
 
+// in static/script.js
+
+function zeichneVerlauf(verlaufDaten) {
+    const verlaufListe = document.getElementById('verlauf-liste');
+
+    // NEU: Sicherheitsprüfung. Falls das Element nicht gefunden wird,
+    // geben wir eine klare Fehlermeldung aus und brechen ab.
+    if (!verlaufListe) {
+        console.error("FATALER FEHLER: Das HTML-Element mit der ID 'verlauf-liste' wurde nicht gefunden!");
+        return;
+    }
+
+    verlaufListe.innerHTML = ''; // Alte Liste leeren
+
+    // Wir zeigen die Liste in umgekehrter Reihenfolge an (neuester Zug oben)
+    verlaufDaten.reverse().forEach(eintrag => {
+        const p = document.createElement('p');
+        p.textContent = eintrag;
+        verlaufListe.appendChild(p);
+    });
+}
+
 /**
  * Die Hauptfunktion, die den Spielzustand vom Server holt und die Seite aktualisiert.
  */
 async function updateSpiel() {
     try {
-        const response = await fetch('/api/spielstand'); // 1. Daten anfordern
-        if (!response.ok) { // Fehlerbehandlung, falls Server einen Fehler meldet
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // NEU: Wir holen Spielstand und Verlauf gleichzeitig
+        const [spielResponse, verlaufResponse] = await Promise.all([
+            fetch('/api/spielstand'),
+            fetch('/api/verlauf')
+        ]);
+
+        if (!spielResponse.ok || !verlaufResponse.ok) {
+            throw new Error(`HTTP error!`);
         }
-        const spielDaten = await response.json(); // 2. Daten als JSON auspacken
-        zeichneSpielbrett(spielDaten); // 3. Brett mit den neuen Daten zeichnen
+        
+        const spielDaten = await spielResponse.json();
+        const verlaufDaten = await verlaufResponse.json();
+        
+        // Beide Teile der Seite neu zeichnen
+        zeichneSpielbrett(spielDaten);
+        zeichneVerlauf(verlaufDaten);
+
     } catch (error) {
-        console.error("Fehler beim Abrufen der Spieldaten:", error);
+        console.error("Fehler beim Abrufen der Daten:", error);
         statusText.innerText = "Fehler bei der Verbindung zum Server.";
     }
 }
