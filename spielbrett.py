@@ -80,10 +80,10 @@ class Spielbrett:
                     self.mulden[letzter_index] = 0
                     self.mulden[gegenueber_index] = 0
             
-            # Ansonsten ist der Zug einfach normal zu Ende.
-            # print("Zug beendet. Nächster Spieler ist an der Reihe.")
-            # return False # Spielerwechsel
-            return {'hat_extrazug': False, 'letzter_index': letzter_index}
+        # Ansonsten ist der Zug einfach normal zu Ende.
+        # print("Zug beendet. Nächster Spieler ist an der Reihe.")
+        # return False # Spielerwechsel
+        return {'hat_extrazug': False, 'letzter_index': letzter_index}
 
     def pruefe_spielende(self):
         # Summe der Steine auf den Seiten beider Spieler berechnen.
