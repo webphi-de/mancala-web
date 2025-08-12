@@ -1,7 +1,7 @@
 # app.py
 
 # render_template wurde hinzugefügt
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 from spielbrett import Spielbrett
 from ki_gegner import KiGegner
 
@@ -9,32 +9,19 @@ from ki_gegner import KiGegner
 app = Flask(__name__)
 brett = Spielbrett()
 ki = KiGegner(spieler_nummer=2, max_tiefe=5)
-aktueller_spieler = 1
+aktueller_spieler = 2
 spiel_verlauf = []
 
-def spiel_zuruecksetzen():
-    """Hilfsfunktion, um das Spiel auf den Anfangszustand zu setzen."""
-    global brett, aktueller_spieler, spiel_verlauf 
-    brett = Spielbrett()
-    aktueller_spieler = 1
-    spiel_verlauf = []
-    
 
 # --- API-Routen und die neue HTML-Route ---
 
 @app.route('/')
 def home():
-    """Liefert jetzt unsere Haupt-HTML-Seite aus."""
     return render_template('index.html')
 
 @app.route('/api/verlauf')
 def get_verlauf():
     return jsonify(spiel_verlauf)
-
-@app.route('/api/neues_spiel')
-def neues_spiel():
-    spiel_zuruecksetzen()
-    return get_spielstand()
 
 @app.route('/api/spielstand')
 def get_spielstand():
@@ -73,7 +60,7 @@ def mache_zug_api(mulden_index):
     steine_vorher = brett.mulden[mulden_index]
     zug_ergebnis = brett.mache_zug(mulden_index) # EINZIGER AUFRUF FÜR MENSCH
     
-    log_eintrag = f"   Mulde {mulden_index + 1} ({steine_vorher}) -> Mulde {zug_ergebnis['letzter_index']+1}"
+    log_eintrag = f"   Mulde {mulden_index + 1} ({steine_vorher}) ➨ Mulde {zug_ergebnis['letzter_index']+1}"
     spiel_verlauf.append(log_eintrag)
 
     # --- 3. Spielende oder Extrazug prüfen ---
@@ -93,7 +80,7 @@ def mache_zug_api(mulden_index):
         zug_ergebnis_ki = brett.mache_zug(ki_zug_index) # EINZIGER AUFRUF FÜR KI
         
         # KORREKTUR: ki_zug_index und zug_ergebnis_ki verwenden
-        log_eintrag_ki = f"KI: Mulde {ki_zug_index+1} ({steine_vorher_ki}) -> Mulde {zug_ergebnis_ki['letzter_index']+1}"
+        log_eintrag_ki = f"KI: Mulde {ki_zug_index-6} ({steine_vorher_ki}) ➠ Mulde {zug_ergebnis_ki['letzter_index']+1}"
         spiel_verlauf.append(log_eintrag_ki)
 
         if brett.pruefe_spielende():
@@ -107,6 +94,37 @@ def mache_zug_api(mulden_index):
 
     return get_spielstand()
 
+@app.route('/api/neues_spiel', methods=['GET', 'POST'])
+def neues_spiel():
+    starter = request.args.get('starter', default='1')
+    spiel_zuruecksetzen(int(starter))
+    return get_spielstand()
+
+def spiel_zuruecksetzen(starter=1):
+    global brett, aktueller_spieler, spiel_verlauf 
+    brett = Spielbrett()
+    aktueller_spieler = int(starter)
+    spiel_verlauf = []
+    # KI beginnt ggf. sofort:
+    if aktueller_spieler == ki.spieler_nummer:
+        while aktueller_spieler == ki.spieler_nummer and not brett.pruefe_spielende():
+            ki_zug_index = ki.finde_besten_zug(brett)
+            if ki_zug_index == -1: break
+            steine_vorher_ki = brett.mulden[ki_zug_index]
+            zug_ergebnis_ki = brett.mache_zug(ki_zug_index)
+            log_eintrag_ki = f"KI: Mulde {ki_zug_index-6} ({steine_vorher_ki}) Mulde {zug_ergebnis_ki['letzter_index']+1}"
+            spiel_verlauf.append(log_eintrag_ki)
+            if brett.pruefe_spielende():
+                break
+            if zug_ergebnis_ki['hat_extrazug']:
+                continue
+            else:
+                aktueller_spieler = 1
+
 # --- Server starten ---
 if __name__ == '__main__':
-    app.run(debug=True)
+    spiel_zuruecksetzen()
+    app.run(host='192.168.178.24', port=5000, debug=True)
+
+    
+    

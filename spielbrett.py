@@ -111,13 +111,13 @@ class Spielbrett:
         return False
     
 
-# --- Komplette Spiel-Schleife zum Testen ---
-# --- Komplette, korrigierte Spiel-Schleife ---
+# --- Komplette Spiel-Schleife zum Testen auf der Konsole mit python spielbrett.py ---
+# --- Wird ignoriert/übersprungen durch app.py ---
 
 if __name__ == '__main__':
     brett = Spielbrett()
     from ki_gegner import KiGegner
-    ki = KiGegner(spieler_nummer=2, max_tiefe=5)
+    ki = KiGegner(spieler_nummer=2, max_tiefe=15)
     aktueller_spieler = 1
 
     while True:

@@ -10,6 +10,10 @@ body {
     margin-bottom: 20px;
     text-align: center;
 }
+#starter-auswahl {
+    margin-top: 20px;
+    text-align: center;
+}
 
 /* --- DAS NEUE GRID-LAYOUT --- */
 #spielbrett-grid {
@@ -79,6 +83,9 @@ body {
     width: 80%;
     max-width: 500px;
     text-align: center;
+    background-color: #c9c9c9;
+    padding-top: 5px; 
+    padding-bottom: 10px;
 }
 
 #verlauf-liste {
@@ -97,4 +104,27 @@ body {
     font-size: 0.9em;
     border-bottom: 1px solid #ddd;
     padding-bottom: 4px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none; /* Entfernt den Standard-Look für WebKit */
+  -moz-appearance: none;    /* Entfernt den Standard-Look für Firefox */
+  appearance: none;         /* Entfernt den Standard-Look */
+  width: 50px; /* Beispielbreite */
+  background: #b9b9b9a1; /* Hintergrund transparent */
+  transform: translateY(5px);
+  accent-color: rgb(138, 138, 138);
+  margin-left: 10px;
+}
+
+#neustart-button {
+    margin-top: 20px;
+    margin-left: 10px;
+    padding: 5px 10px;
+    font-size: 1em;
+    background-color: rgb(138, 138, 138);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }

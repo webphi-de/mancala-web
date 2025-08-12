@@ -4,6 +4,8 @@
 const spielbrettContainer = document.getElementById('spielbrett-container');
 const statusText = document.getElementById('status-text');
 const neustartButton = document.getElementById('neustart-button');
+const starterAuswahl = document.getElementById('starter-auswahl');
+
 
 /**
  * Zeichnet das gesamte Spielbrett und fügt Klick-Events hinzu.
@@ -124,7 +126,8 @@ async function updateSpiel() {
 
 // Event-Listener für den Neustart-Button
 neustartButton.addEventListener('click', async () => {
-    await fetch('/api/neues_spiel');
+    const starter = starterAuswahl ? starterAuswahl.value : "1";
+    await fetch('/api/neues_spiel?starter=' + starter); 
     updateSpiel();
 });
 

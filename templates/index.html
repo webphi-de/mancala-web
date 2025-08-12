@@ -11,9 +11,23 @@
 <body>
     <img src="../static/mancala_logo.png" alt="Mancala" height="150">
 
-    <div id="spiel-info">
-        <p>Status: <span id="status-text">Lade Spiel...</span></p>
+    <div>
+        <label for="starter-auswahl"></label>
+    <!--<select id="starter-auswahl">
+        <option value="1">Mensch</option>
+        <option value="2">KI</option>
+    </select>-->
+        Mensch<input type="range" min="1" max="2" value="1" id="starter-auswahl" list="spieler">
+        <datalist id="spieler">
+            <option value="1" label="1"></option>
+            <option value="2" label="2"></option>
+        </datalist>KI
         <button id="neustart-button">Neues Spiel</button>
+    </div>
+
+    <div id="spiel-info">
+        
+        
     </div>
 
     <!-- Neuer Haupt-Container für das Grid-Layout -->
@@ -24,6 +38,7 @@
     <!-- NEU: Container für den Spielverlauf -->
  <div id="verlauf-container">
     <h2>Spielverlauf</h2>
+    <p>Status: <span id="status-text">Lade Spiel...</span></p>
     <!-- Die ID hier muss exakt "verlauf-liste" lauten -->
     <div id="verlauf-liste"></div>
 </div>

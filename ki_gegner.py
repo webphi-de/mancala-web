@@ -5,7 +5,7 @@ from copy import deepcopy
 
 class KiGegner:
     
-    def __init__(self, spieler_nummer, max_tiefe=5):
+    def __init__(self, spieler_nummer, max_tiefe=9):
         """
         Initialisiert den KI-Gegner.
         spieler_nummer: 1 oder 2
