@@ -5,7 +5,7 @@ from copy import deepcopy
 
 class KiGegner:
     
-    def __init__(self, spieler_nummer, max_tiefe=9):
+    def __init__(self, spieler_nummer, max_tiefe=5):
         """
         Initialisiert den KI-Gegner.
         spieler_nummer: 1 oder 2
@@ -40,12 +40,8 @@ class KiGegner:
                 # Brett kopieren, um den Zug zu simulieren, ohne das Original zu ändern
                 brett_kopie = deepcopy(brett)
                 
-                # Zug auf der Kopie ausführen
-                # Die mache_zug Methode gibt zurück, ob ein Extrazug erfolgt ist.
-                # Für die KI-Bewertung ist das wichtig, da es die "Ist_Maximierer"-Ebene beeinflusst.
-                # Hier nehmen wir an, dass mache_zug nur True/False für Extrazug zurückgibt.
-                # Wir müssen später anpassen, dass mache_zug keine Prints macht und keine Returns bei Fehlern.
-                hat_extrazug = brett_kopie.mache_zug(mulden_index)
+                # Das Ergebnis von mache_zug enthält jetzt mehr Infos
+                zug_ergebnis = brett_kopie.mache_zug(mulden_index)
                 
                 # Jetzt rufen wir den MiniMax-Algorithmus auf, um diesen Zug zu bewerten
                 # Die KI will ihren Wert maximieren (ist_maximierer = True)
@@ -55,9 +51,10 @@ class KiGegner:
                     self.max_tiefe -1, # Tiefe reduzieren für den nächsten Zug im Baum
                     float('-inf'), 
                     float('inf'), 
-                    True if hat_extrazug else False # ist_maximierer für den Zustand NACH dem ersten Zug
-                                                    # Wenn Extrazug, bleibt die KI am Zug (Maximierer)
-                                                    # Wenn keiner, ist der gegner am Zug (Minimierer)
+                    True if zug_ergebnis['hat_extrazug'] else False,
+                    # Wir übergeben die Info über den ersten Zug direkt
+                    zug_ergebnis['hat_extrazug'],
+                    zug_ergebnis['hat_geklaut']
                 )
                 
                 # Wenn diese Bewertung besser ist als die bisher beste, merke sie dir
@@ -67,117 +64,89 @@ class KiGegner:
         
         return bester_zug
 
-    def _minimax(self, brett, tiefe, alpha, beta, ist_maximierer):
-        """
-        Die rekursive Kernfunktion des Algorithmus. _minimax, weil sie eine "interne" Hilfsmethode ist.
-        """
-        # 1. Abbruchbedingungen
-        # a) Maximale Tiefe erreicht
+    def _minimax(self, brett, tiefe, alpha, beta, ist_maximierer, hat_extrazug=False, hat_geklaut=False):
+        # Abbruchbedingung: Tiefe 0 erreicht
         if tiefe == 0:
-            return self._bewerte_brett(brett)
+            return self._bewerte_brett(brett, hat_extrazug, hat_geklaut)
         
-        # b) Spiel ist beendet
-        # Prüfe, ob das Spielende erreicht ist. Wenn ja, bewerte das Endbrett.
-        # Hier ist es wichtig, dass pruefe_spielende() das Brett auch anpasst (Steine in Kalaha verschieben)
-        # bevor wir es bewerten.
+        # Abbruchbedingung: Spielende
         if brett.pruefe_spielende():
-             return self._bewerte_brett(brett)
+             return self._bewerte_brett(brett, False, False) # Am Ende gibt es keine Boni mehr
 
-        # 2. Wenn der Maximierer am Zug ist (unsere KI)
         if ist_maximierer:
             max_bewertung = float('-inf')
-            
-            # Bestimmen der möglichen Züge für den Maximierer
-            if self.spieler_nummer == 1: # KI ist Spieler 1
-                mulden_bereich = range(0, 6)
-            else: # KI ist Spieler 2
-                mulden_bereich = range(7, 13)
-
+            # ... (Mulden-Bereich bestimmen bleibt gleich) ...
             for mulden_index in mulden_bereich:
-                if brett.mulden[mulden_index] > 0: # Nur legale Züge
+                if brett.mulden[mulden_index] > 0:
                     brett_kopie = deepcopy(brett)
-                    hat_extrazug = brett_kopie.mache_zug(mulden_index)
+                    zug_ergebnis = brett_kopie.mache_zug(mulden_index) # Ergebnis holen
                     
-                    # Rekursiver Aufruf:
-                    # Wenn Extrazug: bleibt der Maximierer am Zug (ist_maximierer = True)
-                    # Wenn kein Extrazug: wechselt zum Minimierer (ist_maximierer = False)
                     bewertung = self._minimax(
                         brett_kopie, 
                         tiefe - 1, 
                         alpha, 
                         beta, 
-                        True if hat_extrazug else False # Perspektive des NÄCHSTEN Spielers
+                        True if zug_ergebnis['hat_extrazug'] else False,
+                        zug_ergebnis['hat_extrazug'], # Infos für die nächste Ebene weitergeben
+                        zug_ergebnis['hat_geklaut']
                     )
                     max_bewertung = max(max_bewertung, bewertung)
                     alpha = max(alpha, bewertung)
-                    
-                    # Alpha-Beta-Schnitt: Wenn Alpha größer als Beta, dann schneiden
                     if beta <= alpha:
-                        break # Pruning
+                        break 
             return max_bewertung
-
-        # 3. Wenn der Minimierer am Zug ist (der Gegner aus Sicht der KI)
-        else: 
+        else: # Minimierer
             min_bewertung = float('inf')
-
-            # Bestimmen der möglichen Züge für den Minimierer (Gegner)
-            if self.spieler_nummer == 1: # KI ist Spieler 1, Gegner ist Spieler 2
-                mulden_bereich = range(7, 13)
-            else: # KI ist Spieler 2, Gegner ist Spieler 1
-                mulden_bereich = range(0, 6)
-
+            # ... (Mulden-Bereich bestimmen bleibt gleich) ...
             for mulden_index in mulden_bereich:
-                if brett.mulden[mulden_index] > 0: # Nur legale Züge
+                if brett.mulden[mulden_index] > 0:
                     brett_kopie = deepcopy(brett)
-                    hat_extrazug = brett_kopie.mache_zug(mulden_index)
+                    zug_ergebnis = brett_kopie.mache_zug(mulden_index) # Ergebnis holen
                     
-                    # Rekursiver Aufruf:
-                    # Wenn Extrazug: bleibt der Minimierer am Zug (ist_maximierer = False)
-                    # Wenn kein Extrazug: wechselt zum Maximierer (ist_maximierer = True)
                     bewertung = self._minimax(
                         brett_kopie, 
                         tiefe - 1, 
                         alpha, 
                         beta, 
-                        False if hat_extrazug else True # Perspektive des NÄCHSTEN Spielers
+                        False if zug_ergebnis['hat_extrazug'] else True,
+                        zug_ergebnis['hat_extrazug'], # Infos für die nächste Ebene weitergeben
+                        zug_ergebnis['hat_geklaut']
                     )
                     min_bewertung = min(min_bewertung, bewertung)
                     beta = min(beta, bewertung)
-                    
-                    # Alpha-Beta-Schnitt: Wenn Beta kleiner als Alpha, dann schneiden
                     if beta <= alpha:
-                        break # Pruning
+                        break
             return min_bewertung
             
-    def _bewerte_brett(self, brett):
-        """
-        Die Heuristik! Das "Gehirn" der KI.
-        Bewertet einen gegebenen Spielzustand aus der Sicht der KI.
-        Verbesserte Version
-        """
+    def _bewerte_brett(self, brett, hat_extrazug, hat_geklaut):
+        # Hier ist die neue, intelligentere Bewertung!
         if self.spieler_nummer == 1:
-            meine_kalaha_idx = 6
-            gegner_kalaha_idx = 13
-            meine_mulden_slice = slice(0, 6)
-            gegner_mulden_slice = slice(7, 13)
+            meine_kalaha_idx, gegner_kalaha_idx = 6, 13
+            meine_mulden_slice, gegner_mulden_slice = slice(0, 6), slice(7, 13)
         else:
-            meine_kalaha_idx = 13
-            gegner_kalaha_idx = 6
-            meine_mulden_slice = slice(7, 13)
-            gegner_mulden_slice = slice(0, 6)   
+            meine_kalaha_idx, gegner_kalaha_idx = 13, 6
+            meine_mulden_slice, gegner_mulden_slice = slice(7, 13), slice(0, 6)
             
-        # Faktor 1: Die Differenz der Punkte in den Kalahas (wichtigstes Kriterium)
+        # 1. Die Differenz der Punkte in den Kalahas (wichtigstes Kriterium)
         punkte_bewertung = brett.mulden[meine_kalaha_idx] - brett.mulden[gegner_kalaha_idx]
         
-        # Faktor 2: Die Differenz der Steine auf der jeweiligen Spielfeldseite
-        # Mehr Steine auf der eigenen Seite bedeuten mehr zukünftige Möglichkeiten.
+        # 2. Die Differenz der Steine auf dem Feld (mehr Steine = mehr Züge)
         meine_steine_auf_feld = sum(brett.mulden[meine_mulden_slice])
         gegner_steine_auf_feld = sum(brett.mulden[gegner_mulden_slice])
         feld_bewertung = meine_steine_auf_feld - gegner_steine_auf_feld
         
-        # Die Gesamtbewertung ist eine gewichtete Summe.
-        # Wir gewichten die Punkte in der Kalaha deutlich höher als die Steine auf dem Feld.
-        # z.B. im Verhältnis 2:1 oder 3:1
-        gesamte_bewertung = (punkte_bewertung * 2) + feld_bewertung
+        # 3. Belohnung für strategisch gute Züge
+        extrazug_bonus = 3  # Ein Extrazug ist gut
+        geklaut_bonus = 5   # Steine klauen ist noch besser
+        
+        bonus = 0
+        if hat_extrazug:
+            bonus += extrazug_bonus
+        if hat_geklaut:
+            bonus += geklaut_bonus
+            
+        # Die Gesamtbewertung ist eine gewichtete Summe
+        # z.B. sind Punkte in der Kalaha doppelt so wichtig wie Steine auf dem Feld
+        gesamte_bewertung = (punkte_bewertung * 2) + feld_bewertung + bonus
         
         return gesamte_bewertung

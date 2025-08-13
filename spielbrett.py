@@ -55,9 +55,7 @@ class Spielbrett:
 
         # Regel A: Letzter Stein landet in der eigenen Kalaha -> Extrazug
         if letzter_index == spieler_kalaha:
-            # print("Letzter Stein in eigener Kalaha. Extrazug!")
-            # return True # Extrazug
-            return {'hat_extrazug': True, 'letzter_index': letzter_index}
+            return {'hat_extrazug': True, 'letzter_index': letzter_index, 'hat_geklaut': False} # auch hier hat_geklaut hinzufügen
         
         # Regel B: Letzter Stein landet in einer leeren Mulde auf der eigenen Seite -> Steine klauen
         # Wir prüfen, ob die Mulde vorher leer war (jetzt ist 1 Stein drin) und ob sie auf der Spielerseite liegt.
@@ -80,9 +78,21 @@ class Spielbrett:
                     self.mulden[letzter_index] = 0
                     self.mulden[gegenueber_index] = 0
             
-        # Ansonsten ist der Zug einfach normal zu Ende.
-        # print("Zug beendet. Nächster Spieler ist an der Reihe.")
-        # return False # Spielerwechsel
+        # Regel B: Letzter Stein landet in einer leeren Mulde auf der eigenen Seite -> Steine klauen
+        hat_geklaut = False # Standardmäßig auf False setzen
+        if (spieler_kalaha == 6 and 0 <= letzter_index <= 5) or \
+           (spieler_kalaha == 13 and 7 <= letzter_index <= 12):
+
+            if self.mulden[letzter_index] == 1:
+                gegenueber_index = 12 - letzter_index
+                if self.mulden[gegenueber_index] > 0:
+                    hat_geklaut = True # Es hat ein Diebstahl stattgefunden!
+                    geklaute_steine = self.mulden[gegenueber_index] + self.mulden[letzter_index]
+                    self.mulden[spieler_kalaha] += geklaute_steine
+                    self.mulden[letzter_index] = 0
+                    self.mulden[gegenueber_index] = 0
+            
+        return {'hat_extrazug': False, 'letzter_index': letzter_index, 'hat_geklaut': hat_geklaut} # "hat_geklaut" hinzufügen
         return {'hat_extrazug': False, 'letzter_index': letzter_index}
 
     def pruefe_spielende(self):
@@ -182,51 +192,3 @@ if __name__ == '__main__':
         if not hat_extrazug:
             aktueller_spieler = 2 if aktueller_spieler == 1 else 1
 
-"""
-# --- Komplette Spiel-Schleife zum Testen ohne KI ---
-if __name__ == '__main__':
-    brett = Spielbrett()
-    aktueller_spieler = 1 # Spieler 1 beginnt
-
-    while True: # Die Schleife läuft, bis das Spiel endet
-        print("\n" + "="*30)
-        print(brett)
-        print(f"\nSpieler {aktueller_spieler} ist am Zug.")
-
-        # Zug des Spielers einlesen
-        try:
-            # Wir fragen nach einer Zahl von 1-6 und rechnen sie in den Index um
-            if aktueller_spieler == 1:
-                wahl = int(input("Wähle deine Mulde (1-6): "))
-                mulden_index = wahl - 1
-            else: # Spieler 2
-                wahl = int(input("Wähle deine Mulde (1-6 auf deiner Seite): "))
-                mulden_index = wahl + 6 # Umrechnung auf Indizes 7-12
-            
-            hat_extrazug = brett.mache_zug(mulden_index)
-
-        except (ValueError, IndexError):
-            print("Ungültige Eingabe. Bitte eine passende Zahl eingeben.")
-            continue # Nächster Versuch in der Schleife
-
-        # Nach jedem Zug prüfen, ob das Spiel vorbei ist
-        if brett.pruefe_spielende():
-            print("\n" + "="*30)
-            print("Das Spiel ist beendet!")
-            print(brett)
-            kalaha1 = brett.mulden[6]
-            kalaha2 = brett.mulden[13]
-            print(f"\nEndstand: Spieler 1 ({kalaha1}) vs. Spieler 2 ({kalaha2})")
-            if kalaha1 > kalaha2:
-                print("Spieler 1 gewinnt!")
-            elif kalaha2 > kalaha1:
-                print("Spieler 2 gewinnt!")
-            else:
-                print("Unentschieden!")
-            break # Die while-Schleife beenden
-
-        # Spieler wechseln (außer bei Extrazug, diese Logik müssen wir noch verfeinern)
-        # Fürs Erste wechseln wir einfach immer den Spieler
-        if not hat_extrazug:
-            aktueller_spieler = 2 if aktueller_spieler == 1 else 1
-"""

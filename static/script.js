@@ -156,76 +156,84 @@ input.addEventListener("input", (event) => {
   value.textContent = event.target.value;
 });
 
-// in static/script.js, z.B. am Ende der Datei einfügen
+// In static/script.js
 
 async function animiereZug(startIndex) {
     if (document.body.classList.contains('warten')) return;
     document.body.classList.add('warten');
-    statusText.innerText = 'KI überlegt...';
 
     // 1. Hole die Start- und Ziel-Elemente
-    const startMulde = document.querySelector(`.mulde[data-index='${startIndex}']`);
-    const anzahlSteine = parseInt(startMulde.innerText);
+    const startMuldeElem = document.querySelector(`.mulde[data-index='${startIndex}']`);
+    const anzahlSteine = parseInt(startMuldeElem.innerText);
+    if (anzahlSteine === 0) {
+        document.body.classList.remove('warten');
+        return;
+    }
 
-    // Verhindere Klicks während der Animation
+    // Deaktiviere Klick-Möglichkeiten während der Animation
     const klickbareMulden = document.querySelectorAll('.clickable');
     klickbareMulden.forEach(m => m.classList.remove('clickable'));
+    startMuldeElem.innerText = '0'; // Mulde sofort leeren für besseres Gefühl
+
+    // --- NEU: Den korrekten Pfad der Steine VORHER berechnen ---
+    const pfad = [];
+    let aktuellerIndex = startIndex;
+    const gegnerKalahaIndex = 13; // Da der Mensch immer Spieler 1 ist
 
     // 2. Erstelle und animiere die Steine
+    for (let i = 0; i < anzahlSteine; i++) {
+        aktuellerIndex = (aktuellerIndex + 1) % 14;
+        if (aktuellerIndex === gegnerKalahaIndex) {
+            aktuellerIndex = (aktuellerIndex + 1) % 14; // Überspringen
+        }
+        
+        let zielElement;
+        if (aktuellerIndex === 6) {
+            zielElement = document.getElementById('kalaha-spieler1');
+        } else if (aktuellerIndex === 13) {
+            zielElement = document.getElementById('kalaha-spieler2');
+        } else {
+            zielElement = document.querySelector(`.mulde[data-index='${aktuellerIndex}']`);
+        }
+        pfad.push(zielElement);
+    }
+    // --- Ende der Pfad-Berechnung ---
+
+
+    // Starte die Animation für jeden Stein mit einer leichten Verzögerung
     for (let i = 0; i < anzahlSteine; i++) {
         const stein = document.createElement('div');
         stein.className = 'stein';
         document.body.appendChild(stein);
 
-        // Positioniere Stein über der Startmulde
-        const startRect = startMulde.getBoundingClientRect();
+        const startRect = startMuldeElem.getBoundingClientRect();
+        const zielRect = pfad[i].getBoundingClientRect();
+
+        // Positioniere Stein am Start
         stein.style.left = `${startRect.left + startRect.width / 2 - 5}px`;
         stein.style.top = `${startRect.top + startRect.height / 2 - 5}px`;
-
-        // Berechne die Zielposition (ohne Animation in die gegnerische Kalaha)
-        let zielIndex = startIndex;
-        let steineGelegt = 0;
-        while (steineGelegt <= i) {
-            zielIndex = (zielIndex + 1) % 14;
-            // Spieler 1 überspringt Kalaha 13, Spieler 2 überspringt Kalaha 6
-            if (
-                (startIndex >= 0 && startIndex <= 5 && zielIndex === 13) ||
-                (startIndex >= 7 && startIndex <= 12 && zielIndex === 6)
-            ) {
-                continue; // überspringen
-            }
-            steineGelegt++;
-        }
-
-        let zielMulde = document.querySelector(`[data-index='${zielIndex}']`) || document.getElementById('kalaha-spieler1');
-        // if (zielIndex === 13) zielMulde = document.getElementById('kalaha-spieler2');
-        // if (zielIndex === 6) zielMulde = document.getElementById('kalaha-spieler1'); 
-
-
-
-        const zielRect = zielMulde.getBoundingClientRect();
         
-        // Timeout für den animierten "Flug"
+        // Timeout für den "Flug" zum berechneten Ziel
         setTimeout(() => {
-            stein.style.transform = `translate(${zielRect.left - startRect.left}px, ${zielRect.top - startRect.top}px)`;
-        }, i * 100); // 100ms Verzögerung pro Stein
+            const transX = zielRect.left - startRect.left; // + (zielRect.width / 2) - 5;
+            const transY = zielRect.top - startRect.top; // + (zielRect.height / 2) - 5;
+            stein.style.transform = `translate(${transX}px, ${transY}px)`;
+        }, i * 80); // 80ms Verzögerung pro Stein
 
         // Stein nach der Animation entfernen
         setTimeout(() => {
             stein.remove();
-        }, 1000 + i * 100);
+        }, 1000 + i * 80);
     }
 
-    // 3. Nach der Animation den Server aufrufen und das Spielbrett aktualisieren
+    // Am Ende der gesamten Animation den Server kontaktieren
     setTimeout(async () => {
-        const response = await fetch('/api/mache_zug/' + startIndex);
-        const data = await response.json();
+        statusText.innerText = 'KI überlegt...';
+        await fetch('/api/mache_zug/' + startIndex);
         await updateSpiel();
         document.body.classList.remove('warten');
-
-        // Prüfe, ob die KI einen Zug gemacht hat und animiere diesen
-        if (data.ki_zug_index !== null && data.ki_zug_index !== undefined && data.ki_zug_index !== -1) {
-            setTimeout(() => animiereZug(data.ki_zug_index), 500); // kleine Pause für bessere Optik
-        }
-    }, anzahlSteine * 100 + 500);
+    }, anzahlSteine * 80 + 600);
 }
+
+// Und im `zeichneSpielbrett` EventListener die Zeile anpassen:
+// mulde.addEventListener('click', () => animiereZug(i)); // (i ist der Index aus der for-Schleife)
