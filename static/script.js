@@ -5,6 +5,12 @@ const spielbrettContainer = document.getElementById('spielbrett-container');
 const statusText = document.getElementById('status-text');
 const neustartButton = document.getElementById('neustart-button');
 const starterAuswahl = document.getElementById('starter-auswahl');
+const kiTiefeAuswahl = document.getElementById('ki-tiefe-auswahl');
+const kiTiefeWert = document.getElementById('ki-tiefe-wert');
+
+kiTiefeAuswahl.addEventListener('input', () => {
+    kiTiefeAuswahl.textContent = kiTiefeAuswahl.value;
+});
 
 
 /**
@@ -40,14 +46,10 @@ function zeichneSpielbrett(spielDaten) {
 
         if (spielDaten.aktueller_spieler === 1 && spielDaten.mulden[i] > 0 && !spielDaten.spiel_beendet) {
             mulde.classList.add('clickable');
-            mulde.addEventListener('click', async () => {
-                if (document.body.classList.contains('warten')) return;
-                document.body.classList.add('warten');
-                statusText.innerText = 'KI überlegt...';
-                await fetch('/api/mache_zug/' + i);
-                await updateSpiel();
-                document.body.classList.remove('warten');
-            });
+            // Und im `zeichneSpielbrett` EventListener ersetzen:
+            // alt: mulde.addEventListener('click', async () => { ... });
+            // neu:
+            mulde.addEventListener('click', () => animiereZug(i));
         }
         gridContainer.appendChild(mulde);
     }
@@ -126,11 +128,104 @@ async function updateSpiel() {
 
 // Event-Listener für den Neustart-Button
 neustartButton.addEventListener('click', async () => {
-    const starter = starterAuswahl ? starterAuswahl.value : "1";
-    await fetch('/api/neues_spiel?starter=' + starter); 
+    const starter = starterAuswahl.value;
+    const max_tiefe = kiTiefeAuswahl.value;
+
+    // Wir senden die Daten jetzt als POST-Request mit JSON-Body
+    await fetch('/api/neues_spiel', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            starter: starter,
+            max_tiefe: max_tiefe
+        })
+    });
     updateSpiel();
 });
 
 
 // Das Spiel zum ersten Mal laden, wenn die Seite aufgerufen wird.
 updateSpiel();
+
+const value = document.querySelector("#ki-tiefe-wert");
+const input = document.querySelector("#ki-tiefe-auswahl");
+value.textContent = input.value;
+input.addEventListener("input", (event) => {
+  value.textContent = event.target.value;
+});
+
+// in static/script.js, z.B. am Ende der Datei einfügen
+
+async function animiereZug(startIndex) {
+    if (document.body.classList.contains('warten')) return;
+    document.body.classList.add('warten');
+    statusText.innerText = 'KI überlegt...';
+
+    // 1. Hole die Start- und Ziel-Elemente
+    const startMulde = document.querySelector(`.mulde[data-index='${startIndex}']`);
+    const anzahlSteine = parseInt(startMulde.innerText);
+
+    // Verhindere Klicks während der Animation
+    const klickbareMulden = document.querySelectorAll('.clickable');
+    klickbareMulden.forEach(m => m.classList.remove('clickable'));
+
+    // 2. Erstelle und animiere die Steine
+    for (let i = 0; i < anzahlSteine; i++) {
+        const stein = document.createElement('div');
+        stein.className = 'stein';
+        document.body.appendChild(stein);
+
+        // Positioniere Stein über der Startmulde
+        const startRect = startMulde.getBoundingClientRect();
+        stein.style.left = `${startRect.left + startRect.width / 2 - 5}px`;
+        stein.style.top = `${startRect.top + startRect.height / 2 - 5}px`;
+
+        // Berechne die Zielposition (ohne Animation in die gegnerische Kalaha)
+        let zielIndex = startIndex;
+        let steineGelegt = 0;
+        while (steineGelegt <= i) {
+            zielIndex = (zielIndex + 1) % 14;
+            // Spieler 1 überspringt Kalaha 13, Spieler 2 überspringt Kalaha 6
+            if (
+                (startIndex >= 0 && startIndex <= 5 && zielIndex === 13) ||
+                (startIndex >= 7 && startIndex <= 12 && zielIndex === 6)
+            ) {
+                continue; // überspringen
+            }
+            steineGelegt++;
+        }
+
+        let zielMulde = document.querySelector(`[data-index='${zielIndex}']`) || document.getElementById('kalaha-spieler1');
+        // if (zielIndex === 13) zielMulde = document.getElementById('kalaha-spieler2');
+        // if (zielIndex === 6) zielMulde = document.getElementById('kalaha-spieler1'); 
+
+
+
+        const zielRect = zielMulde.getBoundingClientRect();
+        
+        // Timeout für den animierten "Flug"
+        setTimeout(() => {
+            stein.style.transform = `translate(${zielRect.left - startRect.left}px, ${zielRect.top - startRect.top}px)`;
+        }, i * 100); // 100ms Verzögerung pro Stein
+
+        // Stein nach der Animation entfernen
+        setTimeout(() => {
+            stein.remove();
+        }, 1000 + i * 100);
+    }
+
+    // 3. Nach der Animation den Server aufrufen und das Spielbrett aktualisieren
+    setTimeout(async () => {
+        const response = await fetch('/api/mache_zug/' + startIndex);
+        const data = await response.json();
+        await updateSpiel();
+        document.body.classList.remove('warten');
+
+        // Prüfe, ob die KI einen Zug gemacht hat und animiere diesen
+        if (data.ki_zug_index !== null && data.ki_zug_index !== undefined && data.ki_zug_index !== -1) {
+            setTimeout(() => animiereZug(data.ki_zug_index), 500); // kleine Pause für bessere Optik
+        }
+    }, anzahlSteine * 100 + 500);
+}

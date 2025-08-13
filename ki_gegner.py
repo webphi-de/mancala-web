@@ -153,15 +153,31 @@ class KiGegner:
         """
         Die Heuristik! Das "Gehirn" der KI.
         Bewertet einen gegebenen Spielzustand aus der Sicht der KI.
-        Eine einfache, aber gute erste Heuristik ist:
-        "Anzahl meiner Steine in der Kalaha - Anzahl der Steine des Gegners"
+        Verbesserte Version
         """
         if self.spieler_nummer == 1:
             meine_kalaha_idx = 6
             gegner_kalaha_idx = 13
+            meine_mulden_slice = slice(0, 6)
+            gegner_mulden_slice = slice(7, 13)
         else:
             meine_kalaha_idx = 13
             gegner_kalaha_idx = 6
+            meine_mulden_slice = slice(7, 13)
+            gegner_mulden_slice = slice(0, 6)   
             
-        bewertung = brett.mulden[meine_kalaha_idx] - brett.mulden[gegner_kalaha_idx]
-        return bewertung
+        # Faktor 1: Die Differenz der Punkte in den Kalahas (wichtigstes Kriterium)
+        punkte_bewertung = brett.mulden[meine_kalaha_idx] - brett.mulden[gegner_kalaha_idx]
+        
+        # Faktor 2: Die Differenz der Steine auf der jeweiligen Spielfeldseite
+        # Mehr Steine auf der eigenen Seite bedeuten mehr zukünftige Möglichkeiten.
+        meine_steine_auf_feld = sum(brett.mulden[meine_mulden_slice])
+        gegner_steine_auf_feld = sum(brett.mulden[gegner_mulden_slice])
+        feld_bewertung = meine_steine_auf_feld - gegner_steine_auf_feld
+        
+        # Die Gesamtbewertung ist eine gewichtete Summe.
+        # Wir gewichten die Punkte in der Kalaha deutlich höher als die Steine auf dem Feld.
+        # z.B. im Verhältnis 2:1 oder 3:1
+        gesamte_bewertung = (punkte_bewertung * 2) + feld_bewertung
+        
+        return gesamte_bewertung
