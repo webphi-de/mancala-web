@@ -232,8 +232,5 @@ async function animiereZug(startIndex) {
         await fetch('/api/mache_zug/' + startIndex);
         await updateSpiel();
         document.body.classList.remove('warten');
-    }, anzahlSteine * 80 + 600);
+    }, anzahlSteine * 180 + 600);
 }
-
-// Und im `zeichneSpielbrett` EventListener die Zeile anpassen:
-// mulde.addEventListener('click', () => animiereZug(i)); // (i ist der Index aus der for-Schleife)
